@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 import pandas as pd
-from domain.dataset_api import DatasetAPIi # Asegúrate de que INDECAPI esté en tu PYTHONPATH o en el mismo archivo/directorio
-# from data.data_saver import DataSaver # Descomenta si ya tienes tu clase DataSaver implementada
+from domain.dataset_api import DatasetAPI # Asegúrate de que INDECAPI esté en tu PYTHONPATH o en el mismo archivo/directorio
+from data.data_saver import DataSaver # Descomenta si ya tienes tu clase DataSaver implementada
 
 # --- Configuración y Obtención de Datos ---
 
@@ -36,7 +36,7 @@ def main():
     print(f"Período de consulta para el IPC (asegurando disponibilidad): desde {start_date_str_api} hasta {end_date_str_api}")
 
     # 2. Cargar datos de inflación usando la clase INDECAPI
-    indec_api = DatasetAPIi()
+    indec_api = DatasetAPI()
     try:
         # Llamamos a cargar_datos con los parámetros esperados por INDECAPI
         indec_api.cargar_datos(series_ids=[indec_api.IPC_NATIONAL_ID],
@@ -143,19 +143,18 @@ def main():
     except Exception as e:
         print(f"Error al cargar datos del INDEC: {e}")
 
-    # --- Integración con DataSaver (descomenta si lo necesitas) ---
-    # try:
-    #     if indec_api.datos is not None and not indec_api.datos.empty:
-    #         db = DataSaver()
-    #         # Es una buena práctica darle un nombre descriptivo a la tabla
-    #         db.guardar_dataframe(indec_api.datos, "ipc_datos_nacionales")
-    #         print("\nDatos del IPC guardados en la base de datos.")
-    #     else:
-    #         print("\nNo hay datos de IPC para guardar.")
-    # except NameError:
-    #     print("\nAdvertencia: La clase DataSaver no está definida o importada. No se guardarán los datos.")
-    # except Exception as e:
-    #     print(f"Error al guardar datos con DataSaver: {e}")
+try:
+    if DatasetAPI.datos is not None and not DatasetAPI.datos.empty:
+        db = DataSaver()
+        # Es una buena práctica darle un nombre descriptivo a la tabla
+        db.guardar_dataframe(DatasetAPI.datos, "ipc_datos_nacionales")
+        print("\nDatos del IPC guardados en la base de datos.")
+    else:
+        print("\nNo hay datos de IPC para guardar.")
+except NameError:
+    print("\nAdvertencia: La clase DataSaver no está definida o importada. No se guardarán los datos.")
+except Exception as e:
+    print(f"Error al guardar datos con DataSaver: {e}")
 
 if __name__ == "__main__":
     main()
