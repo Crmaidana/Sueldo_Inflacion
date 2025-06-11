@@ -1,10 +1,10 @@
 import requests
 import pandas as pd
-from domain.daset import Dataset
+from domain.dataset import Dataset
 from urllib.parse import urlencode
 
 
-class DatasetAPIi(Dataset):
+class DatasetAPI(Dataset):
     """
     Clase para obtener datos de series de tiempo del INDEC a través de la API
     de datos.gob.ar, especialmente el Índice de Precios al Consumidor (IPC).
