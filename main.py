@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from domain.dataset_api import DatasetAPI
 from domain.dataset_csv import DatasetCsv
 from domain.dataset_excel import DatasetExcel
+from data.data_saver import DataSaver # Asegúrate de tener esta clase implementada y disponible
 
 # La función calcular_inflacion_periodo es genérica y puede quedarse
 def calcular_inflacion_periodo(df, fecha_inicio, fecha_fin, valor_columna='ipc_valor'):
@@ -14,29 +15,51 @@ def calcular_inflacion_periodo(df, fecha_inicio, fecha_fin, valor_columna='ipc_v
     try:
         # Asegurarse de que el índice sea DatetimeIndex
         if not isinstance(df.index, pd.DatetimeIndex):
-            print("Advertencia: El DataFrame no tiene un DatetimeIndex. Intentando convertir 'fecha' a índice.")
             if 'fecha' in df.columns:
                 df['fecha'] = pd.to_datetime(df['fecha'])
                 df = df.set_index('fecha')
             else:
                 raise ValueError("El DataFrame no tiene un índice de fecha ni una columna 'fecha'.")
         
-        # Ajustar fecha_fin para incluir todo el mes si el índice es el primer día del mes
-        # Esto asegura que df.loc[fecha_inicio:fecha_fin] incluya el mes de fin
-        # Si el índice es el 1 del mes, entonces un slice a '2025-04-01' incluirá los datos de abril.
+        # Asegurarse de que el índice esté ordenado
+        df.sort_index(inplace=True)
+
+        # Convertir las fechas de inicio y fin a string 'YYYY-MM' para usar con .loc
+        # Esto asume que el índice del DataFrame es el primer día del mes (ej. 2024-01-01)
+        fecha_inicio_str_month = fecha_inicio.strftime('%Y-%m-%d')
+        fecha_fin_str_month = fecha_fin.strftime('%Y-%m-%d')
+
+        # Buscar el valor de IPC para la fecha de inicio del período
+        # Usamos .loc para buscar el índice exacto del mes (primer día).
+        # Esto funcionará si tu índice es pd.Timestamp('YYYY-MM-01').
         
-        df_periodo = df.loc[fecha_inicio.strftime('%Y-%m'):fecha_fin.strftime('%Y-%m')]
+        # Primero, intentar un acceso directo. Si falla, buscar la fila que corresponde al mes.
+        try:
+            ipc_inicio = df.loc[fecha_inicio_str_month, valor_columna]
+        except KeyError:
+            # Si el día exacto no existe, buscar el mes
+            ipc_inicio_series = df.loc[df.index.to_period('M') == fecha_inicio.to_period('M'), valor_columna]
+            if ipc_inicio_series.empty:
+                print(f"Error: No se encontró IPC para el mes de inicio del período: {fecha_inicio.strftime('%Y-%m')}. Revise el rango de datos.")
+                return None
+            ipc_inicio = ipc_inicio_series.iloc[0]
 
-        if df_periodo.empty:
-            print(f"No hay datos disponibles para el período {fecha_inicio.strftime('%Y-%m')} a {fecha_fin.strftime('%Y-%m')}.")
-            return None
 
-        # Obtener el IPC al inicio y al final del período
-        # Usamos .iloc[0] y .iloc[-1] para asegurar que tomamos el primer y último valor del periodo filtrado.
-        ipc_inicio = df_periodo[valor_columna].iloc[0]
-        ipc_fin = df_periodo[valor_columna].iloc[-1]
-
+        try:
+            ipc_fin = df.loc[fecha_fin_str_month, valor_columna]
+        except KeyError:
+            # Si el día exacto no existe, buscar el mes
+            ipc_fin_series = df.loc[df.index.to_period('M') == fecha_fin.to_period('M'), valor_columna]
+            if ipc_fin_series.empty:
+                print(f"Error: No se encontró IPC para el mes de fin del período: {fecha_fin.strftime('%Y-%m')}. Revise el rango de datos.")
+                return None
+            ipc_fin = ipc_fin_series.iloc[0]
+            
         # Calcular la inflación porcentual
+        if ipc_inicio == 0:
+            print("Error: IPC inicial es cero. No se puede calcular la inflación.")
+            return None
+            
         inflacion_porcentual = ((ipc_fin / ipc_inicio) - 1) * 100
         return inflacion_porcentual
     except KeyError:
@@ -54,7 +77,6 @@ def main():
     excel_file_path = 'file/sh_ipc_05_25.xls'
 
     # Instanciar los datasets
-    # Usamos DatasetAPIi como en tu main original
     dataset_api_indec = DatasetAPI() 
     dataset_csv = DatasetCsv(csv_file_path)
     dataset_excel = DatasetExcel(excel_file_path)
@@ -73,36 +95,36 @@ def main():
 
     if choice_source == '1':
         print("\nCargando datos del INDEC (API)...")
-        # Lógica para definir fechas de inicio y fin de la API (tomada de tu main original)
         current_date = datetime.now()
-        if current_date.month <= 2: 
-            end_date_obj_api = current_date.replace(year=current_date.year - 1, month=current_date.month + 12 - 2, day=1)
-        else:
-            end_date_obj_api = current_date.replace(month=current_date.month - 2, day=1)
+        
+        # Ajuste para obtener datos hasta el mes anterior para la API (más realistas)
+        # Si hoy es 11 de junio de 2025, end_date_obj_api será 2025-05-01
+        end_date_obj_api = current_date.replace(day=1) - timedelta(days=1) # Retrocede al último día del mes anterior
+        end_date_obj_api = end_date_obj_api.replace(day=1) # Luego al primer día de ese mes
         end_date_str_api = end_date_obj_api.strftime('%Y-%m-%d')
-        start_date_obj_api = end_date_obj_api - timedelta(days=30 * 14)
+
+        # Fecha de inicio: Un rango adecuado (ej. 5 años para datos de IPC)
+        # Esto asegura que tengas suficientes datos para búsquedas de sueldo.
+        start_date_obj_api = end_date_obj_api.replace(year=end_date_obj_api.year - 5) 
         start_date_str_api = start_date_obj_api.strftime('%Y-%m-%d')
 
         print(f"Período de consulta para el IPC (API INDEC): desde {start_date_str_api} hasta {end_date_str_api}")
 
         try:
-            # Llamamos a cargar_datos con los parámetros que DatasetAPIi espera
             dataset_api_indec.cargar_datos(series_ids=[dataset_api_indec.IPC_NATIONAL_ID],
-                                        start_date=start_date_str_api,
-                                        end_date=end_date_str_api)
+                                             start_date=start_date_str_api,
+                                             end_date=end_date_str_api)
 
-            df_ipc = dataset_api_indec.datos # <-- Accediendo a la propiedad 'datos' directamente
+            df_ipc = dataset_api_indec.datos 
             source_name = "INDEC (API)"
-            # La columna de valor para el INDEC será el ID de la serie
             ipc_value_column_name = dataset_api_indec.IPC_NATIONAL_ID 
             
             if df_ipc is not None and not df_ipc.empty:
                 # Asegurarse de que el índice sea de fecha para el cálculo posterior
                 if 'fecha' in df_ipc.columns:
                     df_ipc.set_index('fecha', inplace=True)
-                df_ipc.sort_index(inplace=True)
+                df_ipc.sort_index(inplace=True) # Muy importante para que .loc funcione correctamente
                 print("Datos de IPC INDEC cargados exitosamente.")
-                # print(df_ipc.head()) # Para depuración
             else:
                 print("No se pudieron obtener datos del IPC del INDEC.")
 
@@ -114,7 +136,6 @@ def main():
         dataset_csv.cargar_datos()
         df_ipc = dataset_csv.obtener_datos()
         source_name = "IPC Chaco (CSV)"
-        # La columna de valor para CSV es 'ipc_valor' (asumiendo que es así en tu clase)
         ipc_value_column_name = 'ipc_valor'
 
     elif choice_source == '3':
@@ -143,12 +164,9 @@ def main():
         
         if selected_region:
             print(f"\nCargando datos para '{selected_region}' desde Excel...")
-            # Aquí, la lógica en DatasetExcel.cargar_datos(region) debe calcular el IPC acumulado
-            # y devolver un DataFrame con un índice de fecha y una columna 'ipc_valor' o similar.
             dataset_excel.cargar_datos(selected_region)
             df_ipc = dataset_excel.datos
             source_name = f"Variación Mensual (Excel) - {selected_region}"
-            # Asumimos que Excel también produce una columna 'ipc_valor'
             ipc_value_column_name = 'ipc_valor' 
         else:
             print("Opción de región no válida. Saliendo.")
@@ -161,32 +179,95 @@ def main():
         print("No se pudieron cargar los datos de IPC desde la fuente seleccionada. No se puede continuar.")
         return
 
-    # --- Solicitud de período al usuario para el cálculo de inflación ---
-    print("\nIngrese el período para el cual desea calcular la inflación.")
+    # --- Análisis de Sueldo vs. Inflación (ingreso directo y cálculo para ese período) ---
+    print("\n--- Análisis de Sueldo vs. Inflación ---")
+    print("Por favor, ingrese los detalles de su sueldo para la comparación.")
     print("Formato de fecha: AAAA-MM (ej. 2023-01)")
 
-    fecha_inicio_str = input("Fecha de inicio (AAAA-MM): ")
-    fecha_fin_str = input("Fecha de fin (AAAA-MM): ")
-
     try:
-        fecha_inicio = datetime.strptime(fecha_inicio_str, '%Y-%m')
-        fecha_fin = datetime.strptime(fecha_fin_str, '%Y-%m')
+        sueldo_inicial = float(input("Ingrese su sueldo inicial: $"))
+        fecha_sueldo_inicial_str = input("Ingrese la fecha de su sueldo inicial (AAAA-MM): ")
         
-        # Pasar el nombre de la columna que contiene los valores IPC
-        inflacion = calcular_inflacion_periodo(df_ipc, fecha_inicio, fecha_fin, ipc_value_column_name)
+        sueldo_final = float(input("Ingrese su sueldo final: $"))
+        fecha_sueldo_final_str = input("Ingrese la fecha de su sueldo final (AAAA-MM): ")
 
-        if inflacion is not None:
-            print(f"\n--- Resultado del Cálculo de Inflación ---")
-            print(f"Fuente de Datos: {source_name}")
-            print(f"Período: {fecha_inicio_str} a {fecha_fin_str}")
-            print(f"Inflación Acumulada: {inflacion:.2f}%")
+        # Convertir a objetos datetime.datetime (la fecha será siempre el primer día del mes)
+        fecha_sueldo_inicial = datetime.strptime(fecha_sueldo_inicial_str, '%Y-%m')
+        fecha_sueldo_final = datetime.strptime(fecha_sueldo_final_str, '%Y-%m')
+
+        print(f"\nSueldo inicial: ${sueldo_inicial:.2f} (correspondiente a {fecha_sueldo_inicial_str})")
+        print(f"Sueldo final:   ${sueldo_final:.2f} (correspondiente a {fecha_sueldo_final_str})")
+
+        # Calcular la inflación acumulada para el PERÍODO DE LOS SUELDOS
+        inflacion_acumulada_sueldo_periodo = calcular_inflacion_periodo(
+            df_ipc, fecha_sueldo_inicial, fecha_sueldo_final, ipc_value_column_name
+        )
+
+        if inflacion_acumulada_sueldo_periodo is not None:
+            print(f"Inflación acumulada entre {fecha_sueldo_inicial_str} y {fecha_sueldo_final_str}: {inflacion_acumulada_sueldo_periodo:.2f}%")
         else:
-            print("\nNo se pudo calcular la inflación para el período y fuente de datos seleccionados.")
+            print(f"No se pudo calcular la inflación para el período de sueldos ({fecha_sueldo_inicial_str} a {fecha_sueldo_final_str}). Asegúrese de que las fechas estén dentro del rango de datos cargados.")
+            # Si no se puede calcular la inflación, no tiene sentido continuar con la comparación
+            return
+
+
+        # Calcular el incremento salarial
+        if sueldo_inicial != 0:
+            incremento_salarial = ((sueldo_final - sueldo_inicial) / sueldo_inicial) * 100
+            print(f"Incremento salarial en el período: {incremento_salarial:.2f}%")
+        else:
+            print("Advertencia: Sueldo inicial es cero, no se puede calcular el incremento salarial.")
+            incremento_salarial = 0
+            
+        # Comparar y mostrar el resultado
+        if incremento_salarial > inflacion_acumulada_sueldo_periodo:
+            print("\n¡Felicitaciones! Tu sueldo le ganó a la inflación en este período. 🎉")
+            diferencia = incremento_salarial - inflacion_acumulada_sueldo_periodo
+            print(f"Le ganó por un {diferencia:.2f} puntos porcentuales.")
+        elif incremento_salarial < inflacion_acumulada_sueldo_periodo:
+            print("\nLamentablemente, tu sueldo perdió contra la inflación en este período. 📉")
+            diferencia = inflacion_acumulada_sueldo_periodo - incremento_salarial
+            print(f"Perdió por un {diferencia:.2f} puntos porcentuales.")
+        else:
+            print("\nTu sueldo se mantuvo a la par de la inflación en este período. ⚖️")
+
+        # Opcional: Calcular el poder adquisitivo real
+        # Para esto necesitamos los IPCs específicos.
+        # Aquí re-usamos la lógica de calcular_inflacion_periodo para obtener los IPCs de los extremos
+        # Esto es un poco redundante, pero claro.
+        
+        # Obtenemos los IPCs para las fechas exactas de sueldo (primer día del mes)
+        # Esto debería funcionar ya que el índice del DataFrame es DatetimeIndex con el primer día.
+        ipc_inicio_sueldo = df_ipc.loc[fecha_sueldo_inicial.strftime('%Y-%m-%d'), ipc_value_column_name]
+        ipc_final_sueldo = df_ipc.loc[fecha_sueldo_final.strftime('%Y-%m-%d'), ipc_value_column_name]
+
+        if ipc_inicio_sueldo != 0:
+            sueldo_real_ajustado = sueldo_final / (ipc_final_sueldo / ipc_inicio_sueldo)
+            print(f"El poder adquisitivo de tu sueldo final (${sueldo_final:.2f}) es equivalente a ${sueldo_real_ajustado:.2f} en pesos de la fecha inicial.")
 
     except ValueError:
-        print("Formato de fecha inválido. Por favor, use AAAA-MM.")
+        print("Entrada inválida. Asegúrate de ingresar números para los sueldos y fechas en formato AAAA-MM.")
+    except KeyError as ke:
+        print(f"Error al obtener IPC para las fechas del sueldo. Asegúrate que las fechas estén en el rango de datos y que la columna '{ipc_value_column_name}' exista. Detalle: {ke}")
     except Exception as e:
-        print(f"Ocurrió un error inesperado: {e}")
+        print(f"Ocurrió un error inesperado durante el análisis de sueldo vs. inflación: {e}")
+
+
+    # --- Guardar datos en la base de datos (al final de la ejecución principal) ---
+    try:
+        # Solo guarda si se cargaron datos exitosamente
+        if df_ipc is not None and not df_ipc.empty:
+            db = DataSaver()
+            # Se recomienda un nombre de tabla dinámico o que refleje la fuente de datos
+            table_name = "ipc_datos_" + source_name.replace(" ", "_").replace("(", "").replace(")", "").lower()
+            db.guardar_dataframe(df_ipc, table_name)
+            print(f"\nDatos del IPC ({source_name}) guardados en la tabla '{table_name}' de la base de datos.")
+        else:
+            print("\nNo hay datos de IPC cargados para guardar.")
+    except NameError:
+        print("\nAdvertencia: La clase DataSaver no está definida o importada. No se guardarán los datos.")
+    except Exception as e:
+        print(f"Error al guardar datos con DataSaver: {e}")
 
 if __name__ == "__main__":
     main()
