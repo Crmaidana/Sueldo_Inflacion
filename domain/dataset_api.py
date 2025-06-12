@@ -25,10 +25,10 @@ class DatasetAPI(Dataset):
         # Inicializamos la clase base. La 'fuente' (URL completa) se construirá en cargar_datos.
         super().__init__(None) # Pasamos None ya que la URL se define dinámicamente
 
-    def cargar_datos(self, series_ids: list[str], start_date: str, end_date: str = None):
+    def cargar_datos(self, series_ids: list[str], start_date: str, end_date: str = None):  # type: ignore
         """
         Carga datos de series de tiempo del INDEC (o cualquier serie de datos.gob.ar)
-        en formato JSON.
+        en formato JSON.D
 
         Args:
             series_ids (list[str]): Una lista de IDs de las series a consultar.
