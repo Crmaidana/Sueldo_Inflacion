@@ -132,7 +132,7 @@ class DatasetExcel(Dataset):
                 raise ValueError("No se encontraron pares válidos de fecha y variación después de la alineación y limpieza.")
 
             # Convertir la columna 'fecha_val' del DataFrame combinado a DatetimeIndex
-            fechas_final = pd.to_datetime(combined_df['fecha_val'], errors='coerce', infer_datetime_format=True)
+            fechas_final = pd.to_datetime(combined_df['fecha_val'], errors='coerce', infer_datetime_format=True) # type: ignore
 
             if pd.isna(fechas_final).sum() > len(fechas_final) / 2 and combined_df['fecha_val'].apply(lambda x: isinstance(x, (int, float))).all():
                 print("DEBUG: Parece que las fechas son números de serie de Excel en la columna 'fecha_val'. Intentando conversión con 'origin'.")
@@ -147,7 +147,7 @@ class DatasetExcel(Dataset):
 
             # Asegurarse de que las series finales estén alineadas y tengan la misma longitud
             if len(fechas_final) != len(variaciones_final):
-                common_indices = fechas_final.index.intersection(variaciones_final.index)
+                common_indices = fechas_final.index.intersection(variaciones_final.index) # type: ignore
                 fechas_final = fechas_final.loc[common_indices]
                 variaciones_final = variaciones_final.loc[common_indices]
             
