@@ -242,7 +242,7 @@ def main():
         ipc_final_sueldo = df_ipc.loc[fecha_sueldo_final.strftime('%Y-%m-%d'), ipc_value_column_name]
 
         if ipc_inicio_sueldo != 0:
-            sueldo_real_ajustado = sueldo_final / (ipc_final_sueldo / ipc_inicio_sueldo)
+            sueldo_real_ajustado = sueldo_final / (ipc_final_sueldo / ipc_inicio_sueldo) # type: ignore
             print(f"El poder adquisitivo de tu sueldo final (${sueldo_final:.2f}) es equivalente a ${sueldo_real_ajustado:.2f} en pesos de la fecha inicial.")
 
     except ValueError:
