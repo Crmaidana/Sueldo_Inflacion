@@ -47,7 +47,7 @@ class Dataset(ABC):
         """
         self.__fuente = value
 
-    @abstractmethod
+   
     def cargar_datos(self, *args, **kwargs):
         """
         Método abstracto para cargar datos. Debe ser implementado por las subclases.

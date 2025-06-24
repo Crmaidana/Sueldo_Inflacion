@@ -1,6 +1,9 @@
 # domain/dataset_excel.py
 import pandas as pd
-from domain.dataset import Dataset # Se respeta esta importación
+# Antes:
+# from domain.dataset import Dataset
+# Después:
+from .dataset import Dataset # <-- Cambio aquí
 
 class DatasetExcel(Dataset):
     def __init__(self, file_path):

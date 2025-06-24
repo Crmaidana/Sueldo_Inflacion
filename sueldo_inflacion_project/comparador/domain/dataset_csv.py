@@ -1,7 +1,11 @@
 # domain/dataset_csv.py
 import pandas as pd
+# Antes:
+# from domain.dataset import Dataset
+# Después:
+from .dataset import Dataset # <-- Cambio aquí
 
-class DatasetCsv:
+class DatasetCsv(Dataset):
     def __init__(self, file_path):
         self.file_path = file_path
         self.datos = pd.DataFrame()

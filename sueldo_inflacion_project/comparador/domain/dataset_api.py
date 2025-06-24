@@ -1,6 +1,6 @@
 import requests
 import pandas as pd
-from domain.dataset import Dataset
+from .dataset import Dataset
 from urllib.parse import urlencode
 
 
@@ -104,4 +104,3 @@ class DatasetAPI(Dataset):
         except Exception as e:
             print(f"Ocurrió un error inesperado durante la carga de datos: {e}")
             self.datos = pd.DataFrame()
-
