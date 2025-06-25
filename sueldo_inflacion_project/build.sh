@@ -1,8 +1,18 @@
-#!/usr/bin/env bash
-set -o errexit
+    #!/usr/bin/env bash
+    set -o errexit
 
-pip install -r requirements.txt
+    # Instalar dependencias del sistema operativo para PostgreSQL (Render usa Ubuntu)
+    # Esto asegura que psycopg2-binary pueda funcionar si necesita alguna dependencia de bajo nivel
+    sudo apt-get update
+    sudo apt-get install -y libpq-dev
 
-python manage.py collectstatic --no-input
+    # Instalar dependencias de Python
+    pip install -r requirements.txt
 
-python manage.py migrate
+    # Recolectar archivos estáticos
+    python manage.py collectstatic --noinput
+
+    # Ejecutar migraciones de la base de datos
+    # Render inyectará la DATABASE_URL, así que este comando funcionará con PostgreSQL
+    python manage.py migrate
+    
