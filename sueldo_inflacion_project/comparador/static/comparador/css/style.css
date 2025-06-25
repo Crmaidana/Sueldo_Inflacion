@@ -123,3 +123,23 @@ button:hover { background-color: #0056b3; }
         font-size: 0.9em; /* Reduce el tamaño de las etiquetas */
     }
 }
+
+.main-footer {
+    text-align: center;
+    padding: 20px;
+    margin-top: 40px; /* Un poco de espacio arriba */
+    background-color: rgba(0, 0, 0, 0.7); /* Fondo oscuro semitransparente */
+    color: #f0f0f0; /* Color de texto claro */
+    font-size: 0.9em;
+    border-top: 1px solid rgba(255, 255, 255, 0.1); /* Línea divisoria sutil */
+}
+
+/* Si añades un enlace en el footer */
+.main-footer a {
+    color: #87CEEB; /* Un azul claro */
+    text-decoration: none;
+}
+
+.main-footer a:hover {
+    text-decoration: underline;
+}
