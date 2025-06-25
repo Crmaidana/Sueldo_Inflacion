@@ -20,7 +20,6 @@ packaging==25.0
 pandas==2.3.0
 pillow==10.4.0
 platformdirs==4.3.3
-psycopg2==2.9.9
 psycopg2-binary==2.9.10
 PyMySQL==1.1.1
 python-dateutil==2.9.0.post0
