@@ -74,7 +74,7 @@ def main():
 
     # Rutas de los archivos de datos (ajusta si es necesario)
     csv_file_path = 'file/ipc-chaco-historico.csv'
-    excel_file_path = 'file/sh_ipc_05_25.xls'
+    excel_file_path = 'file/sh_ipc_06_25.xls'
 
     # Instanciar los datasets
     dataset_api_indec = DatasetAPI() 
