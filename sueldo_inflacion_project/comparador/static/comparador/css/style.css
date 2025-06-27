@@ -126,6 +126,7 @@ button:hover { background-color: #0056b3; }
 
 .main-footer {
     text-align: center;
+    width: 100%;
     padding: 20px;
     margin-top: 40px; /* Un poco de espacio arriba */
     background-color: rgba(0, 0, 0, 0.7); /* Fondo oscuro semitransparente */
@@ -136,7 +137,7 @@ button:hover { background-color: #0056b3; }
 
 /* Si añades un enlace en el footer */
 .main-footer a {
-    color: #87CEEB; /* Un azul claro */
+    color: #25c6db; /* Un azul claro */
     text-decoration: none;
 }
 
