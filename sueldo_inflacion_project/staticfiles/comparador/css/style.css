@@ -127,7 +127,7 @@ button:hover { background-color: #0056b3; }
 .main-footer {
     text-align: center; /* Centra el contenido del footer horizontalmente */
     padding: 20px 0;    /* Añade algo de espacio arriba y abajo del footer */
-    background-color: #333; /* Un fondo oscuro para el footer */
+    background-color: transparent; /* Un fondo oscuro para el footer */
     color: #40E0D0;     /* Color de texto claro para contraste */
     width: 100%;        /* Asegura que ocupe todo el ancho disponible */
     box-sizing: border-box; /* Incluye padding y border en el ancho/alto */
