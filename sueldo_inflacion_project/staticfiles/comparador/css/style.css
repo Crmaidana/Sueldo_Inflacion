@@ -123,3 +123,25 @@ button:hover { background-color: #0056b3; }
         font-size: 0.9em; /* Reduce el tamaño de las etiquetas */
     }
 }
+/* --- ESTILOS PARA EL FOOTER (AÑADIDOS AQUÍ) --- */
+.main-footer {
+    text-align: center; /* Centra el contenido del footer horizontalmente */
+    padding: 20px 0;    /* Añade algo de espacio arriba y abajo del footer */
+    background-color: #333; /* Un fondo oscuro para el footer */
+    color: #40E0D0;     /* Color de texto claro para contraste */
+    width: 100%;        /* Asegura que ocupe todo el ancho disponible */
+    box-sizing: border-box; /* Incluye padding y border en el ancho/alto */
+    margin-top: 40px;   /* Espacio entre el contenido principal y el footer */
+}
+
+.main-footer p {
+    margin: 0; /* Elimina el margen por defecto de los párrafos dentro del footer */
+    font-size: 0.9em; /* Ajusta el tamaño de fuente si es necesario */
+}
+
+/* Puedes añadir media queries si quieres que el footer se comporte diferente en pantallas pequeñas */
+@media (max-width: 768px) {
+    .main-footer {
+        padding: 15px 10px;
+    }
+}
