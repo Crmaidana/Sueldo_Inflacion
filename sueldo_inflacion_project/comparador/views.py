@@ -135,7 +135,7 @@ def index(request):
 
         # Rutas de los archivos de datos (ajusta si es necesario, ahora son relativas a la app)
         csv_file_path = 'comparador/file/ipc-chaco-historico.csv'
-        excel_file_path = 'comparador/file/sh_ipc_06_25.xls' # O sh_ipc_05_25.xls según el que uses
+        excel_file_path = 'comparador/file/sh_ipc_07_25.xls' # O sh_ipc_05_25.xls según el que uses
 
         # Instanciar los datasets
         dataset_api_indec = DatasetAPI() # Se mantiene la inicialización original
