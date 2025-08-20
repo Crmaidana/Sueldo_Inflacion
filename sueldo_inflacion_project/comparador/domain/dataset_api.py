@@ -14,7 +14,7 @@ class DatasetAPI(Dataset):
 
     # ID de la serie para el Índice de Precios al Consumidor (IPC) - Nivel General Nacional.
     # Este es el ID comúnmente utilizado en la API de datos.gob.ar para el IPC Nacional.
-    IPC_NATIONAL_ID = "101.1_I2NG_2016_M_22" 
+    IPC_NATIONAL_ID = "101.1_I2NG_2016_M_22"  
 
     # NOTA: En la imagen del JSON que mostraste anteriormente, aparecía el ID "101.1_T2NC_2016_M_22"
     # que corresponde al Índice de Precios al Consumidor GBA (Gran Buenos Aires).
@@ -28,14 +28,14 @@ class DatasetAPI(Dataset):
     def cargar_datos(self, series_ids: list[str], start_date: str, end_date: str = None):  # type: ignore
         """
         Carga datos de series de tiempo del INDEC (o cualquier serie de datos.gob.ar)
-        en formato JSON.D
+        en formato JSON.
 
         Args:
             series_ids (list[str]): Una lista de IDs de las series a consultar.
-                                    Ej: ["101.1_I2NG_2016_M_22"] para el IPC Nacional.
+                                     Ej: ["101.1_I2NG_2016_M_22"] para el IPC Nacional.
             start_date (str): Fecha de inicio para la consulta en formato 'YYYY-MM-DD'.
             end_date (str, optional): Fecha de fin para la consulta en formato 'YYYY-MM-DD'.
-                                      Si es None, la API traerá datos hasta la fecha más reciente.
+                                       Si es None, la API traerá datos hasta la fecha más reciente.
         """
         # Parámetros para la consulta a la API
         params = {
@@ -69,22 +69,43 @@ class DatasetAPI(Dataset):
                 df = pd.DataFrame(data['data'], columns=column_names)
 
                 # Convertir la columna 'fecha' a tipo datetime
-                df['fecha'] = pd.to_datetime(df['fecha'])
+                df['fecha'] = pd.to_datetime(df['fecha'], errors='coerce') # Añadido errors='coerce' para robustez
+
+                # --- INICIO DE LAS MODIFICACIONES NECESARIAS ---
+                # Establecer 'fecha' como el índice del DataFrame
+                # y asegurar que sea DatetimeIndex con el primer día del mes
+                df = df.set_index('fecha').dropna(subset=[series_ids[0]]) # Usa el primer ID como columna clave para dropna
+                
+                if isinstance(df.index, pd.DatetimeIndex):
+                    df.index = df.index.to_period('M').to_timestamp()
+                else:
+                    # En caso de que, por alguna razón, no se pueda establecer el DatetimeIndex
+                    print(f"ERROR: No se pudo establecer DatetimeIndex en DatasetAPI. Tipo actual: {type(df.index)}")
+                    self.datos = pd.DataFrame() # Asegura un DataFrame vacío para evitar errores posteriores
+                    return # Salir de la función si el índice es incorrecto
+                # --- FIN DE LAS MODIFICACIONES NECESARIAS ---
+
 
                 # Convertir las columnas de valores a numérico, manejando posibles errores
                 for col in df.columns:
-                    if col != 'fecha':
-                        # Asegúrate de que esto siempre apunte a df[col] y no a 'col'
+                    if col != 'fecha': # Ahora 'fecha' es el índice, no una columna, pero esta verificación está bien.
                         df[col] = pd.to_numeric(df[col], errors='coerce') 
+                
+                # Opcional: Eliminar filas donde el valor IPC principal sea NaN después de la conversión numérica
+                df = df.dropna(subset=[series_ids[0]]) # Asegura que al menos la serie principal no tenga NaNs
+
 
                 self.datos = df
                 print("Datos del INDEC cargados y procesados exitosamente.")
-                print("Primeras 5 filas de los datos cargados:")
+                print("Primeras 5 filas de los datos cargados (con índice de fecha):")
                 print(self.datos.head())
+                print(f"Tipo de índice final en DatasetAPI: {type(self.datos.index)}")
+
 
                 # Llamar a los métodos de validación y transformación de la clase base
                 if self.validar_datos():
-                    self.transformar_datos() 
+                    self.transformar_datos()
+                    print(f"Tipo de índice después de validar/transformar en DatasetAPI: {type(self.datos.index)}") # Verificación adicional
                 else:
                     print("La validación de los datos falló.")
 
